@@ -13,14 +13,14 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "token não fornecido"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token not provided"})
 			c.Abort()
 			return
 		}
 
 		parts := strings.SplitN(authHeader, " ", 2)
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Formato inválido do token"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token format"})
 			c.Abort()
 			return
 		}
@@ -31,14 +31,14 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 			return utils.JwtKey, nil
 		})
 		if err != nil || !token.Valid {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token inválido"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 			c.Abort()
 			return
 		}
 
 		claims, ok := token.Claims.(*utils.Claims)
 		if !ok {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token inválido"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 			c.Abort()
 			return
 		}

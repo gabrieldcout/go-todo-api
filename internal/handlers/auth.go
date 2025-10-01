@@ -10,7 +10,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func Signup(c *gin.Context) {
@@ -19,16 +18,14 @@ func Signup(c *gin.Context) {
 		Password string `json:"password"`
 	}
 
-	// Tenta converter o JSON recebido em Go struct
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid data"})
 		return
 	}
 
-	// Criptografa a senha
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
+	hashedPassword, err := utils.HashPassword(input.Password)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao gerar hash da senha"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating password hash"})
 		return
 	}
 
@@ -37,13 +34,12 @@ func Signup(c *gin.Context) {
 		PasswordHash: string(hashedPassword),
 	}
 
-	// Salva no banco
 	if err := db.DB.Create(&user).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Erro ao criar usuário (talvez email duplicado)"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error creating user (possibly duplicate email)"})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "Usuário criado com sucesso"})
+	c.JSON(http.StatusCreated, gin.H{"message": "User created successfully"})
 }
 
 func Login(c *gin.Context) {
@@ -53,33 +49,30 @@ func Login(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid data"})
 		return
 	}
 
 	var user models.User
 	if err := db.DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Usuário ou senha inválidos"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
 		return
 	}
 
-	// Compara a senha com o hash
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(input.Password)); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Usuário ou senha inválidos"})
+	if ok := utils.CheckPasswordHash(input.Password, user.PasswordHash); !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
 		return
 	}
 
-	// Gera o access token (15 min)
 	accessToken, err := utils.GenerateAccessToken(user.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao gerar token"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating token"})
 		return
 	}
 
-	//	Gera o refresh token (7 dias)
 	refreshToken, err := utils.GenerateRefreshToken(user.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao gerar refresh token"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating refresh token"})
 	}
 
 	c.SetCookie(
@@ -96,53 +89,48 @@ func Login(c *gin.Context) {
 }
 
 func RefreshToken(c *gin.Context) {
-	// Lê o cookie com o refresh token
 	refreshToken, err := c.Cookie("refresh_token")
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Refresh token ausente"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Refresh token missing"})
 		return
 	}
 
-	// Faz o parse e valida o token
 	token, err := jwt.ParseWithClaims(refreshToken, &utils.Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return utils.JwtKey, nil
 	})
 
 	if err != nil || !token.Valid {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Refresh token inválido"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid refresh token"})
 		return
 	}
 
 	claims, ok := token.Claims.(*utils.Claims)
 	if !ok || claims.ExpiresAt.Time.Before(time.Now()) {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Refresh token expirado"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Refresh token expired"})
 		return
 	}
 
-	// Gera novo access token
 	newAccessToken, err := utils.GenerateAccessToken(claims.UserID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao gerar novo access token"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating new access token"})
 		return
 	}
 
-	// Retorna o novo token
 	c.JSON(http.StatusOK, gin.H{
 		"access_token": newAccessToken,
 	})
 }
 
 func Logout(c *gin.Context) {
-	// Deleta o cookie do refresh token
 	c.SetCookie(
-		"refresh_token", // nome
-		"",              // valor vazio
-		-1,              // duração negativa = expira imediatamente
-		"/",             // path
-		"",              // domínio
-		false,           // Secure (true em prod)
-		true,            // HttpOnly
+		"refresh_token",
+		"",
+		-1,
+		"/",
+		"",
+		false,
+		true,
 	)
 
-	c.JSON(http.StatusOK, gin.H{"message": "Logout realizado com sucesso"})
+	c.JSON(http.StatusOK, gin.H{"message": "Logout successful"})
 }

@@ -13,6 +13,6 @@ func main() {
 
 	log.Println("Servidor rodando em http://localhost:8080")
 	if err := r.Run(":8080"); err != nil {
-		log.Fatalf("Erro ao iniciar o servidor: %v", err)
+		log.Fatalf("Error starting the server: %v", err)
 	}
 }

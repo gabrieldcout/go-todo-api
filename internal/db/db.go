@@ -26,12 +26,12 @@ func ConnectDatabase() {
 
 	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatal("Erro ao conectar com o banco:", err)
+		log.Fatal("Error connecting to the database:", err)
 	}
 
 	err = database.AutoMigrate(&models.Task{}, &models.User{})
 	if err != nil {
-		log.Fatal("Erro ao migrar modelo:", err)
+		log.Fatal("Error migrating model:", err)
 	}
 
 	DB = database

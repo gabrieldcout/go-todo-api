@@ -11,10 +11,16 @@ import (
 func GetTasks(c *gin.Context) {
 	var tasks []models.Task
 
-	userID := c.MustGet("userID").(uint)
+	value, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	userID := value.(uint)
 
 	if err := db.DB.Where("user_id = ?", userID).Find(&tasks).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar tarefas"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error fetching tasks"})
 		return
 	}
 
@@ -28,11 +34,16 @@ func CreateTask(c *gin.Context) {
 		return
 	}
 
-	userID := c.MustGet("userID").(uint)
-	task.UserID = userID
-	
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	task.UserID = userID.(uint)
+
 	if err := db.DB.Create(&task).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao criar tarefa"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating task"})
 		return
 	}
 
@@ -42,11 +53,16 @@ func CreateTask(c *gin.Context) {
 func UpdateTask(c *gin.Context) {
 	var task models.Task
 
-	userID := c.MustGet("userID").(uint)
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
 	id := c.Param("id")
 
 	if err := db.DB.Where("id = ? AND user_id = ?", id, userID).First(&task).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Tarefa não encontrada"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
 		return
 	}
 
@@ -61,7 +77,7 @@ func UpdateTask(c *gin.Context) {
 	task.Done = input.Done
 
 	if err := db.DB.Save(&task).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao atualizar tarefa"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error updating task"})
 		return
 	}
 
@@ -72,14 +88,19 @@ func UpdateTask(c *gin.Context) {
 func DeleteTask(c *gin.Context) {
 	var task models.Task
 
-	userID := c.MustGet("userID").(uint)
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
 	id := c.Param("id")
 
 	if err := db.DB.Where("id = ? AND user_id = ?", id, userID).First(&task).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Tarefa não encontrada"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
 		return
 	}
 
 	db.DB.Delete(&task)
-	c.JSON(http.StatusOK, gin.H{"message": "Tarefa deletada"})
+	c.JSON(http.StatusOK, gin.H{"message": "Task deleted"})
 }

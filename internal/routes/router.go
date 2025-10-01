@@ -15,7 +15,6 @@ func SetupRoutes() *gin.Engine {
 	r.POST("/refresh", handlers.RefreshToken)
 	r.POST("/logout", handlers.Logout)
 
-	// Rotas protegidas
 	auth := r.Group("/")
 	auth.Use(middleware.JWTAuthMiddleware())
 	{
