@@ -13,6 +13,8 @@ import (
 
 func TestAuthMiddleware(t *testing.T) {
 	r := gin.New()
+	r.Use(gin.Logger())
+	r.Use(gin.Recovery())
 	r.Use(JWTAuthMiddleware())
 	r.GET("/protected", func(c *gin.Context) {
 		userID, exists := c.Get("userID")

@@ -17,7 +17,7 @@ import (
 func TestGetTasks(t *testing.T) {
 	db.DB = testutils.SetupTestDB(t)
 
-	db.DB.Create(&models.Task{Title: "Tarefa teste", UserID: 1})
+	db.DB.Create(&models.Task{Title: "test", UserID: 1})
 
 	gin.SetMode(gin.TestMode)
 	r := gin.Default()
@@ -33,7 +33,7 @@ func TestGetTasks(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, w.Body.String(), "Tarefa teste")
+	assert.Contains(t, w.Body.String(), "test")
 }
 
 func TestGetTasksErrorNoUserID(t *testing.T) {
@@ -309,7 +309,6 @@ func TestDeleteTaskInternalServerError(t *testing.T) {
 	db.DB = testutils.SetupTestDB(t)
 	db.DB.Create(&models.Task{Title: "Falha", UserID: 1})
 
-	// Simula erro removendo tabela antes do delete
 	db.DB.Migrator().DropTable(&models.Task{})
 
 	gin.SetMode(gin.TestMode)

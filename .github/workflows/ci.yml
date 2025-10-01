@@ -12,6 +12,7 @@ jobs:
 
     env:
       RUN_INTEGRATION_TESTS: false
+      GIN_MODE: release
 
     steps:
       - uses: actions/checkout@v3
