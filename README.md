@@ -47,10 +47,14 @@ Authorization: Bearer <your_token_here>
 
 ### Authentication Routes
 
-| Method | Endpoint         | Description |
-|--------|------------------|--------------|
-| `POST` | `/login`         | Logs in and returns a JWT |
+
+| Method | Endpoint         | Description                                        |
+| ------ | ---------------- | -------------------------------------------------- |
+| `POST` | `/signup`        | Registers a new user                               |
+| `POST` | `/login`         | Logs in and returns a JWT                          |
 | `POST` | `/refresh`       | Generates a new token when the current one expires |
+| `POST` | `/logout`        | Invalidates the current JWT token                  |
+
 
 ---
 
