@@ -11,7 +11,7 @@ func main() {
 
 	r := routes.SetupRoutes()
 
-	log.Println("Servidor rodando em http://localhost:8080")
+	log.Println("Server running at http://localhost:8080")
 	if err := r.Run(":8080"); err != nil {
 		log.Fatalf("Error starting the server: %v", err)
 	}
